@@ -1,3 +1,4 @@
+const serverless = require('serverless-http');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const app = require('./src/app'); // Your Express app
@@ -22,13 +23,14 @@ async function connectToMongoDB() {
   }
 }
 
+// Wrap Express app with serverless-http
+const handler = serverless(app);
+
 // Serverless handler
 module.exports = async (req, res) => {
   try {
-    // Connect to MongoDB
     await connectToMongoDB();
-    // Use Express app to handle the request
-    app(req, res);
+    return handler(req, res);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
