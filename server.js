@@ -1,50 +1,60 @@
-
 const http = require('http');
-const app = require('./src/app')
+const app = require('./src/app'); // your app.js
 const mongoose = require('mongoose');
-const dotenv = require('dotenv').config();
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 const PORT = process.env.PORT || 8000;
-
 const MONGO_URL = process.env.MONGO_URL;
 
-
-// This way of listening not only helps to listen to HTTP requests but also other types of connections(websockets, send request and wait for the respoonse)
+// Create HTTP server
 const server = http.createServer(app);
 
-
+// Setup Socket.io
 const io = require('socket.io')(server, {
-    cors: {
-      origin: '*',
-      methods: ['GET', 'POST']
-    }
-  });
+  cors: {
+    origin: '*', // adjust to your frontend URL if needed
+    methods: ['GET', 'POST'],
+  },
+});
 
 io.on('connection', (socket) => {
-    const {id, role} = socket.handshake.query;
-    console.log('A user connected', id, role)
-})
+  const { id, role } = socket.handshake.query;
+  console.log('A user connected', id, role);
 
+  socket.on('disconnect', () => {
+    console.log('User disconnected', id);
+  });
+});
 
-
-// Emits events when the connection is ready
+// MongoDB connection events
 mongoose.connection.once('open', () => {
-    console.log('MongoDB connection is ready!!')
-})
+  console.log('MongoDB connection is ready!!');
+});
 
-
-//Checking for mongoDB errors
 mongoose.connection.on('error', (err) => {
-   console.log('Error connecting with MongoDB: ',err)  
-})
+  console.error('Error connecting with MongoDB:', err);
+});
 
+// Start server
 async function startServer() {
-   await mongoose.connect(MONGO_URL)    
+  try {
+    // Connect to MongoDB
+    await mongoose.connect(MONGO_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('Connected to MongoDB');
 
+    // Start listening
     server.listen(PORT, () => {
-        console.log(`Listening on port ${PORT}...`)
-    })
-    
+      console.log(`Server listening on port ${PORT}...`);
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1); // exit process if DB connection fails
+  }
 }
 
-startServer()
+startServer();
