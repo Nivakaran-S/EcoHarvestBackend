@@ -1,37 +1,28 @@
-const serverless = require('serverless-http');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const app = require('./src/app'); // Your Express app
+import mongoose from 'mongoose';
+import serverless from 'serverless-http';
+import app from './src/app.js'; // Adjust path if needed
 
-dotenv.config();
+let isConnected = false;
 
-const MONGO_URL = process.env.MONGO_URL;
-
-// MongoDB connection function
-async function connectToMongoDB() {
-  if (mongoose.connection.readyState === 0) { // Not connected
-    try {
-      await mongoose.connect(MONGO_URL, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      });
-      console.log('Connected to MongoDB');
-    } catch (err) {
-      console.error('MongoDB connection error:', err);
-      throw err;
-    }
+async function connectToDB() {
+  if (!isConnected) {
+    await mongoose.connect(process.env.MONGO_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    isConnected = true;
+    console.log('MongoDB connected');
   }
 }
 
-// Wrap Express app with serverless-http
 const handler = serverless(app);
 
-// Serverless handler
-module.exports = async (req, res) => {
+export default async function(req, res) {
   try {
-    await connectToMongoDB();
+    await connectToDB();
     return handler(req, res);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Serverless function error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
-};
+}
