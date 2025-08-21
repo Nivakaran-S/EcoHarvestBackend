@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import serverless from 'serverless-http';
-import app from './src/app.js'; // Adjust path if needed
+import app from './src/app.js';
 
 let isConnected = false;
 
