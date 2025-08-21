@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "watch": "nodemon server.js",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",

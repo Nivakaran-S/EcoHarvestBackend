@@ -1,6 +1,6 @@
 
 const http = require('http');
-const app = require('./app')
+const app = require('./src/app')
 const mongoose = require('mongoose');
 const dotenv = require('dotenv').config();
 
