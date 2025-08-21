@@ -11,22 +11,8 @@ const MONGO_URL = process.env.MONGO_URL;
 // Create HTTP server
 const server = http.createServer(app);
 
-// Setup Socket.io
-const io = require('socket.io')(server, {
-  cors: {
-    origin: '*', // adjust to your frontend URL if needed
-    methods: ['GET', 'POST'],
-  },
-});
 
-io.on('connection', (socket) => {
-  const { id, role } = socket.handshake.query;
-  console.log('A user connected', id, role);
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected', id);
-  });
-});
 
 // MongoDB connection events
 mongoose.connection.once('open', () => {
@@ -51,6 +37,7 @@ async function startServer() {
     server.listen(PORT, () => {
       console.log(`Server listening on port ${PORT}...`);
     });
+
   } catch (err) {
     console.error('Failed to start server:', err);
     process.exit(1); // exit process if DB connection fails
