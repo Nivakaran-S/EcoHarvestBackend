@@ -84,6 +84,11 @@ app.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully!' });
 });
 
+
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to EcoHarvest API!' });
+})
+
 // 404 handler
 app.use((req, res) => {
   console.log(`404 Error: ${req.method} ${req.url}`);
