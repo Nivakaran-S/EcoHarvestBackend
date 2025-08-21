@@ -1,62 +1,60 @@
-// server.js
 const http = require('http');
+const app = require('./src/app'); // your app.js
 const mongoose = require('mongoose');
-const serverless = require('serverless-http');
-require('dotenv').config();
+const dotenv = require('dotenv');
 
-const app = require('./src/app');        // your Express app
+dotenv.config();
+
 const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.MONGO_URL;
 
-let isConnected = false;
+// Create HTTP server
+const server = http.createServer(app);
 
-// MongoDB connection events (optional logging)
-mongoose.connection.once('open', () => {
-  console.log('🌿 MongoDB connection is ready!');
-});
-mongoose.connection.on('error', err => {
-  console.error('🌿 Error connecting with MongoDB:', err);
+// Setup Socket.io
+const io = require('socket.io')(server, {
+  cors: {
+    origin: '*', // adjust to your frontend URL if needed
+    methods: ['GET', 'POST'],
+  },
 });
 
-// Connect to MongoDB (cached across invocations)
-async function connectToDB() {
-  if (isConnected) return;
-  await mongoose.connect(MONGO_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+io.on('connection', (socket) => {
+  const { id, role } = socket.handshake.query;
+  console.log('A user connected', id, role);
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected', id);
   });
-  isConnected = true;
-  console.log('🌿 Connected to MongoDB');
-}
+});
 
-// Wrap your Express app into a serverless handler
-const expressHandler = serverless(app);
+// MongoDB connection events
+mongoose.connection.once('open', () => {
+  console.log('MongoDB connection is ready!!');
+});
 
-async function universalHandler(req, res) {
+mongoose.connection.on('error', (err) => {
+  console.error('Error connecting with MongoDB:', err);
+});
+
+// Start server
+async function startServer() {
   try {
-    await connectToDB();
-    return expressHandler(req, res);
+    // Connect to MongoDB
+    await mongoose.connect(MONGO_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('Connected to MongoDB');
+
+    // Start listening
+    server.listen(PORT, () => {
+      console.log(`Server listening on port ${PORT}...`);
+    });
   } catch (err) {
-    console.error('🚨 Serverless function error:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Failed to start server:', err);
+    process.exit(1); // exit process if DB connection fails
   }
 }
 
-// If run directly (local dev), start an HTTP server
-if (require.main === module) {
-  connectToDB()
-    .then(() => {
-      const server = http.createServer(app);
-      server.listen(PORT, () => {
-        console.log(`🚀 Local server listening on port ${PORT}...`);
-      });
-    })
-    .catch(err => {
-      console.error('Failed to start local server:', err);
-      process.exit(1);
-    });
-
-// Otherwise, export for Vercel (or any Lambda‐style platform)
-} else {
-  module.exports = universalHandler;
-}
+startServer();
