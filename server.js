@@ -1,47 +1,35 @@
-const http = require('http');
-const app = require('./src/app'); // your app.js
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const app = require('./src/app'); // Your Express app
 
 dotenv.config();
 
-const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.MONGO_URL;
 
-// Create HTTP server
-const server = http.createServer(app);
-
-
-
-
-// MongoDB connection events
-mongoose.connection.once('open', () => {
-  console.log('MongoDB connection is ready!!');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('Error connecting with MongoDB:', err);
-});
-
-// Start server
-async function startServer() {
-  try {
-    // Connect to MongoDB
-    await mongoose.connect(MONGO_URL, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log('Connected to MongoDB');
-
-    // Start listening
-    server.listen(PORT, () => {
-      console.log(`Server listening on port ${PORT}...`);
-    });
-
-  } catch (err) {
-    console.error('Failed to start server:', err);
-    process.exit(1); // exit process if DB connection fails
+// MongoDB connection function
+async function connectToMongoDB() {
+  if (mongoose.connection.readyState === 0) { // Not connected
+    try {
+      await mongoose.connect(MONGO_URL, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+      console.log('Connected to MongoDB');
+    } catch (err) {
+      console.error('MongoDB connection error:', err);
+      throw err;
+    }
   }
 }
 
-startServer();
+// Serverless handler
+module.exports = async (req, res) => {
+  try {
+    // Connect to MongoDB
+    await connectToMongoDB();
+    // Use Express app to handle the request
+    app(req, res);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
